@@ -1,0 +1,2 @@
+model_checkpoint_path: "module2"
+all_model_checkpoint_paths: "module2"
