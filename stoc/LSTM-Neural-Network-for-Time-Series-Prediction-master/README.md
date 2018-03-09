@@ -1,4 +1,4 @@
-My works are based on below material, I configured some parameters.
+My works are based on below material, and I configured some parameters.
 
 # LSTM Neural Network for Time Series Prediction
 
