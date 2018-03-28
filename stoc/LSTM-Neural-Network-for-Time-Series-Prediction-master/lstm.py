@@ -13,18 +13,25 @@ warnings.filterwarnings("ignore") #Hide messy Numpy warnings
 def load_data(filename, seq_len, normalise_window):
     f = open(filename, 'rb').read()
     data = f.decode().split('\n')
+    data = [float(f) for f in data]            # one way to normalize data
+    data = (data - np.mean(data)) / np.std(data)
 
-    sequence_length = seq_len + 1
+    sequence_length = seq_len + 1# seq_len + 1 --> seq_len
     result = []
-    for index in range(len(data) - sequence_length):
-        result.append(data[index: index + sequence_length])
+    for index in range(len(data) - sequence_length - 1):
+        temp = data[index: index + sequence_length]
+        if temp[sequence_length - 1] > temp[sequence_length - 2]:
+            temp[sequence_length - 1] = 1.0
+        else:
+            temp[sequence_length - 1] = 0.0
+        result.append(temp)
     
     if normalise_window:
         result = normalise_windows(result)
 
     result = np.array(result)
 
-    row = round(0.95 * result.shape[0])
+    row = round(0.9 * result.shape[0])
     train = result[:int(row), :]
     np.random.shuffle(train)
     x_train = train[:, :-1]
@@ -35,7 +42,7 @@ def load_data(filename, seq_len, normalise_window):
     x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
     x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))  
 
-    return [x_train, y_train, x_test, y_test]
+    return [x_train, y_train, x_test, y_test, result]
 
 def normalise_windows(window_data):
     normalised_data = []
@@ -44,22 +51,22 @@ def normalise_windows(window_data):
         normalised_data.append(normalised_window)
     return normalised_data
 
-def build_model():
+def build_model(layers):
     model = Sequential()
 
-    model.add(LSTM(input_shape=(50, 1),output_dim=50,return_sequences=True))
+    model.add(LSTM(
+        input_shape=(layers[1], layers[0]),
+        output_dim=layers[1],
+        return_sequences=True))
     model.add(Dropout(0.2))
 
-    model.add(LSTM(100,return_sequences=True))
-    model.add(Dropout(0.2))
-    
-    model.add(LSTM(100, return_sequences=True))
-    model.add(Dropout(0.2))
-    
-    model.add(LSTM(100,return_sequences=False))
+    model.add(LSTM(
+        layers[2],
+        return_sequences=False))
     model.add(Dropout(0.2))
 
-    model.add(Dense(output_dim=1))
+    model.add(Dense(
+        output_dim=layers[3]))
     model.add(Activation("relu"))
 
     start = time.time()
